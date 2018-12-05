@@ -35,14 +35,14 @@ class action_plugin_shorturl extends DokuWiki_Action_Plugin
         if ($ACT !== 'show') return;
 
         $redirects = confToHash($this->getsavedir() . '/shorturl.conf');
-        if ($redirects[$ID]) {
+        if (isset($redirects[$ID])) {
             if (preg_match('/^https?:\/\//', $redirects[$ID])) {
                 send_redirect($redirects[$ID]);
             } else {
                 if ($this->getConf('showmsg')) {
                     msg(sprintf($this->getLang('redirected'), hsc($ID)));
                 }
-                send_redirect(wl($redirects[$ID], '', true));
+                send_redirect(wl($redirects[$ID], '', true, '&'));
             }
             exit;
         }
