@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ShortURL Plugin
  * based on redirect plugin
@@ -7,66 +8,63 @@
  * @author     Andreas Gohr <andi@splitbrain.org>
  * @author     Frank Schiebel <frank@linuxmuster.net>
  */
-
-// must be run within Dokuwiki
-if(!defined('DOKU_INC')) die();
-
-if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
-require_once(DOKU_PLUGIN.'action.php');
-
-class action_plugin_shorturl extends DokuWiki_Action_Plugin {
+class action_plugin_shorturl extends DokuWiki_Action_Plugin
+{
 
     /**
      * register the eventhandlers
+     * @inheritdoc
      */
-    function register(&$controller){
+    public function register(Doku_Event_Handler $controller)
+    {
         $controller->register_hook('DOKUWIKI_STARTED',
-                                   'AFTER',
-                                   $this,
-                                   'handle_start',
-                                   array());
+            'AFTER',
+            $this,
+            'handle_start');
     }
 
     /**
      * handle event
      */
-    function handle_start(&$event, $param){
+    public function handle_start(Doku_Event $event)
+    {
         global $ID;
         global $ACT;
+        global $INPUT;
 
-        if($ACT != 'show') return;
+        if ($ACT !== 'show') return;
 
-        $redirects = confToHash($this->getsavedir().'/shorturl.conf');
-        if($redirects[$ID]){
-            if(preg_match('/^https?:\/\//',$redirects[$ID])){
+        $redirects = confToHash($this->getsavedir() . '/shorturl.conf');
+        if (isset($redirects[$ID])) {
+            if (preg_match('/^https?:\/\//', $redirects[$ID])) {
                 send_redirect($redirects[$ID]);
-            }else{
-                if($this->getConf('showmsg')){
-                    msg(sprintf($this->getLang('redirected'),hsc($ID)));
+            } else {
+                if ($this->getConf('showmsg')) {
+                    msg(sprintf($this->getLang('redirected'), hsc($ID)));
                 }
-                send_redirect(wl($redirects[$ID] ,'',true));
+                send_redirect(wl($redirects[$ID], '', true, '&'));
             }
             exit;
-        } else {
-            if ($_GET['generateShortURL'] != "" && auth_quickaclcheck($ID) >= AUTH_READ) {
-                $shorturl =& plugin_load('helper', 'shorturl');
-                if ($shorturl) {
-                    $shortID = $shorturl->autoGenerateShortUrl($ID);
-                }
-            }
+        }
+
+        if ($INPUT->get->str('generateShortURL') !== '' && auth_quickaclcheck($ID) >= AUTH_READ) {
+            /** @var helper_plugin_shorturl $shorturl */
+            $shorturl = plugin_load('helper', 'shorturl');
+            $shorturl->autoGenerateShortUrl($ID);
         }
     }
 
     /**
-      * get savedir
-      */
-    function getsavedir() {
+     * get savedir
+     */
+    protected function getsavedir()
+    {
         global $conf;
-        if ( $this->getConf('saveconftocachedir') ) {
-            return rtrim($conf['savedir'],"/") . "/cache";
-        } else {
-            return dirname(__FILE__);
+        if ($this->getConf('saveconftocachedir')) {
+            return rtrim($conf['savedir'], '/') . '/cache';
         }
+
+        return __DIR__;
     }
 
 }
